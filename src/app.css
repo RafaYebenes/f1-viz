@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@plugin "daisyui" {
+	themes: light --default, dark --prefersdark;
+}
+
+@theme f1 {
+	--font-sans: 'A-OTF Shin Go Pro'
+}
