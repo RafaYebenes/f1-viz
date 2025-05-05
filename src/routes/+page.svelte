@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 
 	// WebSocket server URL
-	const wsURL = 'ws://192.168.1.181:3000';
+	const wsURL = 'ws://localhost:3000';
 
 	// Create reactive state for the data
 	let data: DashboardData = $state({});
@@ -20,13 +20,23 @@
 		};
 
 		socket.onmessage = (event) => {
-			// Update the reactive state with new data
 			try {
-				data = JSON.parse(event.data);
+				const { type, payload } = JSON.parse(event.data);
+
+				if (type === 'car_data') {
+					data = payload; // dashboard principal
+				} else if (type === 'car_damage') {
+					// puedes guardar en otra variable si luego quieres mostrar daños
+					console.log('Daño del coche:', payload);
+				} else if (type === 'trackHeatMap') {
+					// podrías usar esta data para pintar el mapa más adelante
+					console.log('Mapa de calor recibido', payload);
+				}
 			} catch (error) {
-				console.error('Error parsing WebSocket data:', error);
+				console.error('Error parsing structured WebSocket data:', error);
 			}
 		};
+
 
 		socket.onerror = (error) => {
 			connectionStatus = 'Error';
@@ -252,37 +262,67 @@
 
 				<!-- Sector Times -->
 				<div class="card bg-base-200 shadow-xl">
-					<div class="card-body">
-						<h2 class="card-title border-base-300 border-b pb-2">Sector Times</h2>
-						<div class="grid grid-cols-3 gap-4">
-							<div class="text-center">
-								<div class="stat">
-									<div class="stat-title">SECTOR</div>
-									<div class="stat-value">
-										{data.sector !== undefined ? data.sector : '--'}
-									</div>
-								</div>
-							</div>
-							<div class="text-center">
-								<div class="stat">
-									<div class="stat-title">SECTOR 1</div>
-									<div class="stat-value text-sm">
-										{data.sector_1_time !== undefined ? formatLapTime(data.sector_1_time) : '--'}
-									</div>
-									<div class="stat-desc">SEC</div>
-								</div>
-							</div>
-							<div class="text-center">
-								<div class="stat">
-									<div class="stat-title">SECTOR 2</div>
-									<div class="stat-value text-sm">
-										{data.sector_2_time !== undefined ? formatLapTime(data.sector_2_time) : '--'}
-									</div>
-									<div class="stat-desc">SEC</div>
+				<div class="card-body">
+					<h2 class="card-title border-base-300 border-b pb-2">Sector Times</h2>
+					<div class="grid grid-cols-4 gap-4">
+						<!-- Sector actual -->
+						<div class="text-center">
+							<div class="stat">
+								<div class="stat-title">SECTOR</div>
+								<div class="stat-value">
+									{data.sector !== undefined ? data.sector + 1 : '--'}
 								</div>
 							</div>
 						</div>
+
+						<!-- Sector 1 -->
+						<div class="text-center">
+							<div class="stat">
+								<div class="stat-title">SECTOR 1</div>
+								<div class="stat-value text-sm">
+									{#if data.sector === 0}
+										{formatLapTime(data.lap_time_ms)}
+									{:else}
+										{formatLapTime(data.sector_1_time)}
+									{/if}
+								</div>
+								<div class="stat-desc">SEC</div>
+							</div>
+						</div>
+
+						<!-- Sector 2 -->
+						<div class="text-center">
+							<div class="stat">
+								<div class="stat-title">SECTOR 2</div>
+								<div class="stat-value text-sm">
+									{#if data.sector === 1}
+										{formatLapTime(data.lap_time_ms - data.sector_1_time)}
+									{:else if data.sector > 1}
+										{formatLapTime(data.sector_2_time)}
+									{:else}
+										--
+									{/if}
+								</div>
+								<div class="stat-desc">SEC</div>
+							</div>
+						</div>
+
+						<!-- Sector 3 -->
+						<div class="text-center">
+							<div class="stat">
+								<div class="stat-title">SECTOR 3</div>
+								<div class="stat-value text-sm">
+									{#if data.sector === 2}
+										{formatLapTime(data.lap_time_ms - data.sector_1_time - data.sector_2_time)}
+									{:else}
+										--
+									{/if}
+								</div>
+								<div class="stat-desc">SEC</div>
+							</div>
+						</div>
 					</div>
+				</div>
 				</div>
 			</div>
 		{:else}
